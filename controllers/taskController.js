@@ -3,76 +3,92 @@ const taskModel = require("../models/taskModel");
 // Create new Task
 const createTask = async (req, res) => {
     try {
-        const newData = taskModel(req.body);
-        await newData.save();
+        // Hubi in user-ka logged-in uu jiro
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: "User not authenticated" });
+        }
 
-        res.send(newData)
+        // Ku dar userId task-ka
+        const newData = new taskModel({
+            title: req.body.title,
+            description: req.body.description,
+            userId: req.user._id
+        });
+
+        await newData.save();
+        res.status(201).json(newData);
 
     } catch (error) {
-        res.status(501).json({ message: "Not Created" })
+        res.status(500).json({ message: "Task not created", error: error.message });
     }
 }
 
-// read Task 
+// Read all tasks (only for logged-in user)
 const readTask = async (req, res) => {
     try {
-        const getData = await taskModel.find();
-
-        if (getData) {
-            res.send(getData)
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: "User not authenticated" });
         }
+
+        const getData = await taskModel.find({ userId: req.user._id });
+        res.status(200).json(getData);
+
     } catch (error) {
-        res.status(501).json({ message: "Can't read it bro" })
+        res.status(500).json({ message: "Can't read tasks", error: error.message });
     }
 }
 
-// read One Task
+// Read One Task
 const readSingleTask = async (req, res) => {
-
     try {
-        const getSingleData = await taskModel.findOne(
-            { _id: req.params.id }
-        )
+        const getSingleData = await taskModel.findOne({ 
+            _id: req.params.id, 
+            userId: req.user._id // Hubi in task-ku uu user-ka leeyahay
+        });
 
-        if (getSingleData) {
-            res.send(getSingleData)
-        }
+        if (!getSingleData) return res.status(404).json({ message: "Task not found" });
+        res.status(200).json(getSingleData);
+
     } catch (error) {
-        res.status(501).json({ message: "Can't get single Data " })
+        res.status(500).json({ message: "Can't get task", error: error.message });
     }
-
 }
 
-// update task 
+// Update Task
 const updateTask = async (req, res) => {
     try {
         const updateData = await taskModel.updateOne(
-            { _id: req.params.id },
+            { _id: req.params.id, userId: req.user._id }, // Hubi user-ka
             { $set: req.body }
-        )
+        );
 
-        if (updateData) {
-            res.send("updated...")
+        if (updateData.modifiedCount === 0) {
+            return res.status(404).json({ message: "Task not found or nothing to update" });
         }
+
+        res.status(200).json({ message: "Task updated" });
+
     } catch (error) {
-        res.status(501).json({ message: "Can't update bro" })
+        res.status(500).json({ message: "Can't update task", error: error.message });
     }
 }
 
-// delete task
+// Delete Task
 const deleteTask = async (req, res) => {
     try {
-        const deleteData = await taskModel.deleteOne(
-            { _id: req.params.id }
-        )
-        if (deleteData) {
-            res.send("deleted...")
-        }
-    } catch (error) {
-        res.status(501).json({ message: "can't deleted bro " })
-    }
+        const deleteData = await taskModel.deleteOne({ _id: req.params.id, userId: req.user._id });
 
+        if (deleteData.deletedCount === 0) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+
+        res.status(200).json({ message: "Task deleted" });
+
+    } catch (error) {
+        res.status(500).json({ message: "Can't delete task", error: error.message });
+    }
 }
+
 module.exports = {
     createTask,
     readTask,

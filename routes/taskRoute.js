@@ -1,22 +1,23 @@
 const express = require("express");
-const taskController = require("../controllers/taskController")
+const taskController = require("../controllers/taskController");
+const authMiddleware = require("../middleware/authMiddleware");
 
 
 const router = express.Router();
 // create new Tas
-router.post("/create/task", taskController.createTask);
+router.post("/create/task", authMiddleware , taskController.createTask);
 
 // Read New TAsk 
-router.get("/read/task", taskController.readTask);
+router.get("/read/task",authMiddleware, taskController.readTask);
 
 // read One Task
-router.get("/readSingle/task/:id", taskController.readSingleTask);
+router.get("/readSingle/task/:id", authMiddleware,taskController.readSingleTask);
 
 // update task 
-router.put("/update/task/:id", taskController.updateTask);
+router.put("/update/task/:id", authMiddleware , taskController.updateTask);
 
 // delete task
-router.delete("/delete/task/:id", taskController.deleteTask);
+router.delete("/delete/task/:id", authMiddleware ,taskController.deleteTask);
 
 
 module.exports = router
